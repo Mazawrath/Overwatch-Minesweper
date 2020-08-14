@@ -40,6 +40,17 @@ variables
 	player:
 		0: PlayerMode
 		1: PlayerMoved
+		2: SettingsMode
+		4: RowItt
+		5: ColItt
+		6: MinesweeperBoard
+		7: BoardSize
+		8: BoardBombs
+}
+
+subroutines
+{
+	0: StartGame
 }
 
 rule("Rule 4")
@@ -92,7 +103,7 @@ rule("Player joins game")
 	}
 }
 
-rule("Player Start")
+rule("PlayerMode settings")
 {
 	event
 	{
@@ -122,6 +133,7 @@ rule("Player Start")
 		Set Invisible(Event Player, All);
 		Wait(0.250, Ignore Condition);
 		Set Facing(Event Player, Vector(1, 0, 0), To World);
+		Event Player.SettingsMode = 1;
 	}
 }
 
@@ -134,9 +146,131 @@ rule("Create Global HUD")
 
 	actions
 	{
+		"Title"
 		Create In-World Text(Filtered Array(All Players(All Teams), Current Array Element.PlayerMode == 1), Custom String(
 			"Welcome to Minesweeper!"), Vector(10, 25, 0), 50, Clip Against Surfaces, Visible To, Green, Default Visibility);
 		Create In-World Text(Filtered Array(All Players(All Teams), Current Array Element.PlayerMode == 1), Custom String(
 			"A game by u/Mazawrath"), Vector(10, 24, 0), 50, Clip Against Surfaces, Visible To, Blue, Default Visibility);
+		"Settings Screen 1 (Starting game settings)"
+		Create Effect(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 1), Sphere, Green, Vector(10, 20, -5), 0.500,
+			Visible To);
+		Create In-World Text(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 1), Custom String("Start Solo Game"), Vector(10,
+			21, 0), 10, Clip Against Surfaces, Visible To Position and String, Green, Default Visibility);
+		"Settings Screen 2 (Difficulty settings)"
+		Create In-World Text(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 2), Custom String("Beginner"), Vector(10, 22,
+			0), 10, Clip Against Surfaces, Visible To Position and String, Green, Default Visibility);
+		Create Effect(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 2), Sphere, Green, Vector(10, 23, -4), 0.500,
+			Visible To);
+		Create In-World Text(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 2), Custom String("Intermediate"), Vector(10,
+			20, 0), 10, Clip Against Surfaces, Visible To Position and String, Green, Default Visibility);
+		Create Effect(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 2), Sphere, Green, Vector(10, 21, -4), 0.500,
+			Visible To);
+		Create In-World Text(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 2), Custom String("Expert"), Vector(10, 18, 0),
+			10, Clip Against Surfaces, Visible To Position and String, Green, Default Visibility);
+		Create Effect(Filtered Array(All Players(All Teams),
+			Current Array Element.PlayerMode == 1 && Current Array Element.SettingsMode == 2), Sphere, Green, Vector(10, 19, -4), 0.500,
+			Visible To);
+	}
+}
+
+rule("Start solo game button selected")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		"TODO: Actually check when the player is pushing the button"
+		Event Player.PlayerMode == 1;
+		Event Player.SettingsMode == 1;
+		Is Button Held(Event Player, Primary Fire) == True;
+	}
+
+	actions
+	{
+		Wait(1, Ignore Condition);
+		Event Player.SettingsMode = 2;
+	}
+}
+
+rule("Difficulty button selected")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		"TODO: Actually check when the player is pushing the button"
+		Event Player.PlayerMode == 1;
+		Event Player.SettingsMode == 2;
+		Is Button Held(Event Player, Primary Fire) == True;
+	}
+
+	actions
+	{
+		Event Player.SettingsMode = -1;
+		Event Player.PlayerMode = 2;
+		"Simulating they selected a difficulty"
+		Event Player.BoardSize = 16;
+		Event Player.BoardBombs = 40;
+	}
+}
+
+rule("PlayerMode settings Start")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Event Player.PlayerMode == 2;
+	}
+
+	actions
+	{
+		Teleport(Event Player, Vector(0, 0, 0));
+		Set Gravity(Event Player, 100);
+		Clear Status(Event Player, Rooted);
+		Call Subroutine(StartGame);
+	}
+}
+
+rule("StartGame Create")
+{
+	event
+	{
+		Subroutine;
+		StartGame;
+	}
+
+	actions
+	{
+		Event Player.MinesweeperBoard = Empty Array;
+		If(Event Player.BoardSize == 16);
+			Event Player.MinesweeperBoard = Array(Array(Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null,
+				Null, Null), Array(Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null), Null, Null,
+				Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null, Null);
+			disabled For Player Variable(Event Player, RowItt, 0, (Event Player.BoardSize - 1).BoardSize, 1);
+			disabled Modify Player Variable(Event Player, MinesweeperBoard, Append To Array, Array());
+			disabled For Player Variable(Event Player, ColItt, 0, Event Player.BoardSize - 1, 1);
 	}
 }
