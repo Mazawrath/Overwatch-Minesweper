@@ -1,1 +1,19 @@
 
+settings
+{
+	modes
+	{
+		Deathmatch
+		{
+			enabled maps
+			{
+				Workshop Island Night
+			}
+		}
+
+		General
+		{
+			Hero Limit: Off
+		}
+	}
+}
