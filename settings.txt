@@ -1,6 +1,11 @@
-
 settings
 {
+	lobby
+	{
+		Allow Players Who Are In Queue: Yes
+		Match Voice Chat: Enabled
+	}
+
 	modes
 	{
 		Deathmatch
@@ -13,7 +18,125 @@ settings
 
 		General
 		{
+			Game Mode Start: Immediately
 			Hero Limit: Off
 		}
+	}
+
+	heroes
+	{
+		General
+		{
+			No Ammunition Requirement: On
+			Primary Fire: Off
+			Quick Melee: Off
+			Ultimate Ability: Off
+		}
+	}
+}
+
+variables
+{
+	player:
+		0: PlayerMode
+		1: PlayerMoved
+}
+
+rule("Rule 4")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("Set Assemble Heroes time to zero")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	conditions
+	{
+		Is Assembling Heroes == True;
+	}
+
+	actions
+	{
+		Set Match Time(0);
+	}
+}
+
+rule("Player joins game")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Game In Progress == True;
+		Has Spawned(Event Player) == True;
+	}
+
+	actions
+	{
+		Event Player.PlayerMode = 1;
+		Event Player.PlayerMoved = False;
+		Set Status(Event Player, Null, Phased Out, 9999);
+		Set Status(Event Player, Null, Invincible, 9999);
+	}
+}
+
+rule("Player Start")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Event Player.PlayerMode == 1;
+	}
+
+	actions
+	{
+		"Cancel any player velocity"
+		Apply Impulse(All Living Players(All Teams), Down, 0.001, To World, Cancel Contrary Motion);
+		Apply Impulse(All Living Players(All Teams), Up, 0.001, To World, Cancel Contrary Motion);
+		Apply Impulse(All Living Players(All Teams), Backward, 0.001, To World, Cancel Contrary Motion);
+		Apply Impulse(All Living Players(All Teams), Forward, 0.001, To World, Cancel Contrary Motion);
+		Apply Impulse(All Living Players(All Teams), Right, 0.001, To World, Cancel Contrary Motion);
+		Apply Impulse(All Living Players(All Teams), Left, 0.001, To World, Cancel Contrary Motion);
+		"Teleport player to starting area"
+		Teleport(Event Player, Vector(0, 20, 0));
+		Set Gravity(Event Player, 0);
+		Set Status(Event Player, Null, Rooted, 9999);
+		Set Invisible(Event Player, All);
+		Wait(0.250, Ignore Condition);
+		Set Facing(Event Player, Vector(1, 0, 0), To World);
+	}
+}
+
+rule("Create Global HUD")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		Create In-World Text(Filtered Array(All Players(All Teams), Current Array Element.PlayerMode == 1), Custom String(
+			"Welcome to Minesweeper!"), Vector(10, 25, 0), 50, Clip Against Surfaces, Visible To, Green, Default Visibility);
+		Create In-World Text(Filtered Array(All Players(All Teams), Current Array Element.PlayerMode == 1), Custom String(
+			"A game by u/Mazawrath"), Vector(10, 24, 0), 50, Clip Against Surfaces, Visible To, Blue, Default Visibility);
 	}
 }
